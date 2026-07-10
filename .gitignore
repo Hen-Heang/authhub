@@ -1,0 +1,23 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.dbeaver/
+
+# Build output
+target/
+build/
+out/
+bin/
+
+# Gradle / Maven caches
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+
+# Logs & OS files
+logs/
+*.log
+.DS_Store

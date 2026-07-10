@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: todoapi
+
+  datasource:
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+    url: jdbc:postgresql://localhost:5432/jwt_auth
+    username: postgres
+    password: 123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
+
+jwt:
+  secret: dGhpc0lzQVNlY3VyZUFuZFN0cm9uZ0p3dFNlY3JldEtleUZvckF1dGhIdWJBcHBsaWNhdGlvbjIwMjVXaXRoNjRCeXRlcw==
+  expiration: PT24H
+  refresh-token:
+    expiration: P7D
+
+app:
+  frontend-url: http://localhost:3000
+  reset-password:
+    token-expiration-minutes: 1440
+  email:
+    from-name: AuthHub Team
+
+server:
+  port: 8082

@@ -1,0 +1,110 @@
+plugins {
+    id 'org.springframework.boot' version '3.5.15' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+
+allprojects {
+    group = 'com.henheang'
+    version = '0.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    dependencies {
+        // Common dependencies for ALL modules
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+        // Spring Boot common dependencies
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+        // Database
+        runtimeOnly 'org.postgresql:postgresql'
+
+        // Testing
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    }
+
+    tasks.withType(Test).configureEach {
+        useJUnitPlatform()
+    }
+}
+
+// Configure common-api module (base module - no dependencies on other modules)
+project(':common-api') {
+    dependencies {
+        // Only basic dependencies, no project dependencies
+        implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+        annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+        implementation 'commons-beanutils:commons-beanutils:1.9.4'
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+    }
+}
+
+// Configure security-api module
+project(':security-api') {
+    dependencies {
+        // Depend on common-api
+        implementation project(':common-api')
+
+        // Security specific dependencies
+        implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.11'
+        implementation 'org.springframework.boot:spring-boot-starter-mail'
+        implementation 'org.apache.commons:commons-lang3:3.12.0'
+        implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+        implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+
+        // JWT
+        implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+        implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+        implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+        // Rate limiting
+        implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
+
+        // TOTP-based MFA (Google Authenticator / Authy compatible)
+        implementation 'dev.samstevens.totp:totp:1.7.1'
+
+        // Google Sign-In ID token verification
+        implementation 'com.google.api-client:google-api-client:2.8.0'
+
+        // Mapping
+        implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+        annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+        implementation 'commons-beanutils:commons-beanutils:1.9.4'
+
+        // Documentation
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+    }
+}
+
+// Configure todoapi module
+project(':todoapi') {
+    dependencies {
+        // Depend on both common-api and security-api
+        implementation project(':common-api')
+        implementation project(':security-api')
+
+        // Documentation
+        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+    }
+}
