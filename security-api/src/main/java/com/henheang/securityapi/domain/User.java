@@ -1,42 +1,58 @@
 package com.henheang.securityapi.domain;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+
+import com.henheang.securityapi.security.crypto.MfaSecretConverter;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users")
+@SQLDelete(
+        sql =
+                "UPDATE users SET deleted_at = now(), version = version + 1 WHERE id = ? AND version = ?")
+@SQLRestriction("deleted_at IS NULL")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class User implements UserDetails {
+public class User extends SoftDeletableEntity implements UserDetails {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
+    @Column(nullable = false)
     private String email;
 
-
-    @Column(name = "phone_number", nullable = true, unique = true)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
+    // Nullable - OAuth-provisioned users (Google) never set a local password.
     @Column(nullable = true)
     private String password;
 
+    @Size(max = 255)
     private String name;
 
     private String imageUrl;
@@ -49,12 +65,6 @@ public class User implements UserDetails {
 
     private String providerId;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts = 0;
 
@@ -66,41 +76,47 @@ public class User implements UserDetails {
     @Column(name = "mfa_enabled", nullable = false)
     private boolean mfaEnabled = false;
 
-    // Base32 TOTP secret. Only set once MFA setup begins; cleared on disable.
+    // Base32 TOTP secret, AES-256-GCM encrypted at rest via MfaSecretConverter
+    // (see MfaEncryptionConfig). Only set once MFA setup begins; cleared on
+    // disable.
     @Column(name = "mfa_secret")
+    @Convert(converter = MfaSecretConverter.class)
     private String mfaSecret;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    // Explicit join entity (not a bare @ManyToMany) so a role grant can carry
+    // who/when it was granted - see UserRole.
+    @OneToMany(
+            mappedBy = "user",
+            fetch = FetchType.EAGER,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private Set<UserRole> userRoles = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<PasswordResetToken> passwordResetTokens = new HashSet<>();
 
-    public void addRole(Role role) {
-        this.roles.add(role);
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Device> devices = new HashSet<>();
+
+    public Set<Role> getRoles() {
+        return userRoles.stream().map(UserRole::getRole).collect(Collectors.toSet());
     }
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = this.createdAt;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    public Set<Permission> getPermissions() {
+        return getRoles().stream()
+                .flatMap(role -> role.getPermissions().stream())
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toList());
+        Set<GrantedAuthority> authorities = new HashSet<>();
+        getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getName())));
+        getPermissions()
+                .forEach(
+                        permission ->
+                                authorities.add(new SimpleGrantedAuthority(permission.getName())));
+        return authorities;
     }
 
     @Override

@@ -1,24 +1,21 @@
 package com.henheang.securityapi.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.Instant;
 
 @Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "revoked_token")
-public class RevokedToken {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@Table(name = "revoked_tokens")
+public class RevokedToken extends BaseEntity {
 
     // JWT "jti" claim - identifies the specific access token that was revoked.
     @Column(name = "jti", nullable = false, unique = true)

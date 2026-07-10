@@ -28,66 +28,93 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public boolean sendPasswordResetEmail(String email, String name, String resetUrl) {
-        try {
-            log.info("Preparing to send password reset email to: {}", email);
-            log.debug("From Email: {}, From Name: {}", fromEmail, fromName);
-            log.debug("Reset URL: {}", resetUrl);
+        Context context = new Context();
+        context.setVariable("name", name != null ? name : "User");
+        context.setVariable("resetUrl", resetUrl);
+        return sendHtmlEmail(email, "Reset Your AuthHub Password", "password-reset-email", context);
+    }
 
-            // Validate inputs
+    @Override
+    public boolean sendVerificationEmail(String email, String name, String verificationUrl) {
+        Context context = new Context();
+        context.setVariable("name", name != null ? name : "User");
+        context.setVariable("verificationUrl", verificationUrl);
+        return sendHtmlEmail(
+                email, "Verify Your AuthHub Email Address", "email-verification", context);
+    }
+
+    @Override
+    public boolean sendAccountLockedEmail(String email, String name, String unlockUrl) {
+        Context context = new Context();
+        context.setVariable("name", name != null ? name : "User");
+        context.setVariable("unlockUrl", unlockUrl);
+        return sendHtmlEmail(
+                email, "Your AuthHub Account Has Been Locked", "account-locked", context);
+    }
+
+    @Override
+    public boolean sendAccountUnlockedEmail(String email, String name) {
+        Context context = new Context();
+        context.setVariable("name", name != null ? name : "User");
+        return sendHtmlEmail(
+                email, "Your AuthHub Account Has Been Unlocked", "account-unlocked", context);
+    }
+
+    private boolean sendHtmlEmail(String email, String subject, String template, Context context) {
+        try {
+            log.info("Preparing to send '{}' email to: {}", template, email);
+
             if (email == null || email.trim().isEmpty()) {
                 log.error("Email address is null or empty");
                 return false;
             }
 
             if (fromEmail == null || fromEmail.trim().isEmpty()) {
-                log.error("From email is not configured. Please set MAIL_USERNAME environment variable");
+                log.error(
+                        "From email is not configured. Please set MAIL_USERNAME environment variable");
                 return false;
             }
 
-            // Create the email context with variables for the template
-            Context context = new Context();
-            context.setVariable("name", name != null ? name : "User");
-            context.setVariable("resetUrl", resetUrl);
-
-            // Process the email template
             String htmlContent;
             try {
-                htmlContent = templateEngine.process("password-reset-email", context);
-                log.debug("Email template processed successfully");
+                htmlContent = templateEngine.process(template, context);
+                log.debug("Email template '{}' processed successfully", template);
             } catch (Exception e) {
-                log.error("Failed to process email template: {}", e.getMessage(), e);
+                log.error("Failed to process email template '{}': {}", template, e.getMessage(), e);
                 return false;
             }
 
-            // Create and send the email
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
             helper.setFrom(fromEmail, fromName);
             helper.setTo(email);
-            helper.setSubject("Reset Your AuthHub Password");
-            helper.setText(htmlContent, true); // true indicates HTML content
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
-            // Log email details before sending
-            log.debug("Email prepared - To: {}, From: {} ({}), Subject: {}",
-                    email, fromEmail, fromName, "Reset Your AuthHub Password");
-
-            // Send the email
             mailSender.send(message);
 
-            log.info("Password reset email sent successfully to: {}", email);
+            log.info("Email '{}' sent successfully to: {}", template, email);
             return true;
 
         } catch (MessagingException e) {
-            log.error("Failed to send password reset email to {} - MessagingException: {}", email, e.getMessage(), e);
-            // Log more details about the messaging exception
+            log.error(
+                    "Failed to send '{}' email to {} - MessagingException: {}",
+                    template,
+                    email,
+                    e.getMessage(),
+                    e);
             if (e.getCause() != null) {
                 log.error("Cause: {}", e.getCause().getMessage());
             }
             return false;
         } catch (Exception e) {
-            log.error("Unexpected error while sending password reset email to {}: {}", email, e.getMessage(), e);
-            e.printStackTrace();
+            log.error(
+                    "Unexpected error while sending '{}' email to {}: {}",
+                    template,
+                    email,
+                    e.getMessage(),
+                    e);
             return false;
         }
     }

@@ -1,5 +1,3 @@
 package com.henheang.securityapi.exception;
 
-public class EntityNotFoundException extends RuntimeException{
-
-}
+public class EntityNotFoundException extends RuntimeException {}

@@ -1,11 +1,12 @@
 package com.test.todoapi.util;
 
+import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public class AuthUtils {
 
-    public static Long getCurrentUserId() {
+    public static UUID getCurrentUserId() {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -16,7 +17,7 @@ public class AuthUtils {
             Object principal = authentication.getPrincipal();
 
             // Use reflection to call getId() method to avoid importing UserPrincipal
-            return (Long) principal.getClass().getMethod("getId").invoke(principal);
+            return (UUID) principal.getClass().getMethod("getId").invoke(principal);
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to get current user ID: " + e.getMessage(), e);

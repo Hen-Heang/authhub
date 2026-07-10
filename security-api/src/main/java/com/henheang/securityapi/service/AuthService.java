@@ -1,6 +1,5 @@
 package com.henheang.securityapi.service;
 
-
 import com.henheang.securityapi.payload.LoginRequest;
 import com.henheang.securityapi.payload.SignUpRequest;
 import jakarta.validation.Valid;

@@ -1,8 +1,12 @@
 package com.henheang.securityapi.security;
 
-
-
 import com.henheang.securityapi.domain.User;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
@@ -10,25 +14,23 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 public class UserPrincipal implements OAuth2User, UserDetails {
-    @Getter
-    private Long id;
+    @Getter private UUID id;
     private final String email;
     private final String password;
     private final Boolean emailVerified;
     private final Instant lockedUntil;
     private final Collection<? extends GrantedAuthority> authorities;
-    @Setter
-    private Map<String, Object> attributes;
+    @Setter private Map<String, Object> attributes;
 
-    public UserPrincipal(Long id, String email, String password, String name,
-                         Boolean emailVerified, Instant lockedUntil, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(
+            UUID id,
+            String email,
+            String password,
+            String name,
+            Boolean emailVerified,
+            Instant lockedUntil,
+            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.email = email;
         this.password = password;
@@ -38,9 +40,10 @@ public class UserPrincipal implements OAuth2User, UserDetails {
     }
 
     public static UserPrincipal create(User user) {
-        List<GrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toList());
+        List<GrantedAuthority> authorities =
+                user.getAuthorities().stream()
+                        .map(authority -> new SimpleGrantedAuthority(authority.getAuthority()))
+                        .collect(Collectors.toList());
 
         return new UserPrincipal(
                 user.getId(),
@@ -49,8 +52,7 @@ public class UserPrincipal implements OAuth2User, UserDetails {
                 user.getName(),
                 user.getEmailVerified(),
                 user.getLockedUntil(),
-                authorities
-        );
+                authorities);
     }
 
     public static UserPrincipal create(User user, Map<String, Object> attributes) {

@@ -1,16 +1,9 @@
 package com.henheang.securityapi.service.impl;
 
-
 import com.henheang.securityapi.domain.RefreshToken;
 import com.henheang.securityapi.domain.User;
 import com.henheang.securityapi.repository.RefreshTokenRepository;
 import com.henheang.securityapi.service.RefreshTokenService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,13 +13,17 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
-
 
     @Value("${jwt.refresh-token.expiration}")
     private String refreshTokenExpirationString;
@@ -35,7 +32,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Transactional
     public RefreshToken createRefreshToken(User user) {
         // First, revoke all existing tokens for this user
-        List<RefreshToken> existingTokens = refreshTokenRepository.findAllByUserAndRevokedFalse(user);
+        List<RefreshToken> existingTokens =
+                refreshTokenRepository.findAllByUserAndRevokedFalse(user);
         for (RefreshToken token : existingTokens) {
             token.setRevoked(true);
             refreshTokenRepository.save(token);
@@ -63,7 +61,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     @Transactional(readOnly = true)
     public Optional<RefreshToken> validateRefreshToken(String token) {
-        return refreshTokenRepository.findByTokenHash(hash(token))
+        return refreshTokenRepository
+                .findByTokenHash(hash(token))
                 .filter(refreshToken -> !refreshToken.isRevoked())
                 .filter(refreshToken -> refreshToken.getExpiryDate().isAfter(Instant.now()));
     }
@@ -91,26 +90,24 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         }
     }
 
-
-
     @Transactional
     @Scheduled(cron = "0 0 0 * * ?") // Run at midnight every day
     public void deleteExpiredTokens() {
         Instant now = Instant.now();
-        List<RefreshToken> expiredTokens = refreshTokenRepository.findAll().stream()
-                .filter(token -> token.getExpiryDate().isBefore(now)).toList();
+        List<RefreshToken> expiredTokens =
+                refreshTokenRepository.findAll().stream()
+                        .filter(token -> token.getExpiryDate().isBefore(now))
+                        .toList();
         refreshTokenRepository.deleteAll(expiredTokens);
     }
 
-
     @Override
     public void logout(String refreshToken) {
-        RefreshToken token = refreshTokenRepository.findByTokenHash(hash(refreshToken))
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+        RefreshToken token =
+                refreshTokenRepository
+                        .findByTokenHash(hash(refreshToken))
+                        .orElseThrow(() -> new RuntimeException("Refresh token not found"));
         token.setRevoked(true);
         refreshTokenRepository.save(token);
     }
-
-    }
-
-
+}

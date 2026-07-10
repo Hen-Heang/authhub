@@ -15,10 +15,16 @@ public class JwtSecretGenerator {
 
         System.out.println("Generated JWT Secret (512 bits):");
         System.out.println(base64Secret);
-        System.out.println("Length: " + secretBytes.length + " bytes (" + (secretBytes.length * 8) + " bits)");
+        System.out.println(
+                "Length: " + secretBytes.length + " bytes (" + (secretBytes.length * 8) + " bits)");
 
         // Verify it decodes to the correct length
         byte[] decoded = Base64.getDecoder().decode(base64Secret);
-        System.out.println("Verification - Decoded length: " + decoded.length + " bytes (" + (decoded.length * 8) + " bits)");
+        System.out.println(
+                "Verification - Decoded length: "
+                        + decoded.length
+                        + " bytes ("
+                        + (decoded.length * 8)
+                        + " bits)");
     }
 }

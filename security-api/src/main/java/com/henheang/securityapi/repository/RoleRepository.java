@@ -1,13 +1,11 @@
 package com.henheang.securityapi.repository;
 
-
 import com.henheang.securityapi.domain.Role;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
-
-public interface RoleRepository extends JpaRepository<Role, Long> {
-
+public interface RoleRepository extends JpaRepository<Role, UUID> {
 
     Optional<Role> findByName(String roleUser);
 }

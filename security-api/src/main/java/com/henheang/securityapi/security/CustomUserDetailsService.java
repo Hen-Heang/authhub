@@ -1,18 +1,16 @@
 package com.henheang.securityapi.security;
 
-
 import com.henheang.securityapi.domain.User;
 import com.henheang.securityapi.exception.ResourceNotFoundException;
 import com.henheang.securityapi.repository.UserRepository;
 import com.henheang.securityapi.utils.PhoneNumberUtil;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,18 +20,23 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with email : " + email));
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(
+                                () ->
+                                        new UsernameNotFoundException(
+                                                "User not found with email : " + email));
 
         return UserPrincipal.create(user);
     }
 
     @Transactional(readOnly = true)
-    public UserDetails loadUserById(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User", "id", id));
+    public UserDetails loadUserById(UUID id) {
+        User user =
+                userRepository
+                        .findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
 
         return UserPrincipal.create(user);
     }
@@ -67,6 +70,4 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return java.util.Optional.empty();
     }
-
-
 }

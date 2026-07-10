@@ -1,34 +1,31 @@
 package com.henheang.securityapi.domain;
 
-
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "tb_password_reset_tokens")
-
-public class PasswordResetToken {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private Long id;
+@Table(name = "password_reset_tokens")
+public class PasswordResetToken extends BaseEntity {
 
     @Column(name = "token", unique = true, nullable = false)
     private String token;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id", nullable = false)
-    private User  user;
+    private User user;
 
     @Column(nullable = false)
     private LocalDateTime expiryDateTime;
@@ -36,5 +33,4 @@ public class PasswordResetToken {
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(this.expiryDateTime);
     }
-
 }

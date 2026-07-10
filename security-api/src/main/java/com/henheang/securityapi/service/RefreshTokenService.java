@@ -3,9 +3,8 @@ package com.henheang.securityapi.service;
 import com.henheang.securityapi.domain.RefreshToken;
 import com.henheang.securityapi.domain.User;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.stereotype.Service;
-
 import java.util.Optional;
+import org.springframework.stereotype.Service;
 
 @Service
 public interface RefreshTokenService {

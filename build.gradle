@@ -119,6 +119,11 @@ project(':security-api') {
         // Depend on common-api
         implementation project(':common-api')
 
+        // Schema migrations - the only schema authority now (see
+        // docs/database.md); ddl-auto is "validate" in every profile.
+        implementation 'org.flywaydb:flyway-core'
+        implementation 'org.flywaydb:flyway-database-postgresql'
+
         // Security specific dependencies
         implementation 'com.googlecode.libphonenumber:libphonenumber:8.13.11'
         implementation 'org.springframework.boot:spring-boot-starter-mail'
@@ -138,6 +143,9 @@ project(':security-api') {
 
         // TOTP-based MFA (Google Authenticator / Authy compatible)
         implementation 'dev.samstevens.totp:totp:1.7.1'
+        // QR code image rendering for the totp lib's ZxingPngQrGenerator
+        implementation 'com.google.zxing:core:3.5.3'
+        implementation 'com.google.zxing:javase:3.5.3'
 
         // Google Sign-In ID token verification
         implementation 'com.google.api-client:google-api-client:2.8.0'
@@ -149,6 +157,10 @@ project(':security-api') {
 
         // Documentation
         implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+
+        // Permission cache (see CacheConfig / PermissionQueryService)
+        implementation 'org.springframework.boot:spring-boot-starter-cache'
+        implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     }
 }
 

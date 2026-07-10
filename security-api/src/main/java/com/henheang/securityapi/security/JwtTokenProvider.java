@@ -4,23 +4,22 @@ import com.henheang.commonapi.components.common.api.ExitCode;
 import com.henheang.securityapi.domain.User;
 import com.henheang.securityapi.exception.AuthException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import javax.crypto.SecretKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
 
 @Component
 public class JwtTokenProvider {
@@ -29,15 +28,15 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration}")
     private String jwtExpirationString;
 
-    @Autowired
-    private SecretKey jwtSecretKey;
+    @Autowired private SecretKey jwtSecretKey;
 
     public String generateToken(Authentication authentication) {
         try {
             UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
             return generateToken(userPrincipal.getId(), null);
         } catch (Exception e) {
-            throw new AuthException(ExitCode.JWT_CONFIGURATION_ERROR,
+            throw new AuthException(
+                    ExitCode.JWT_CONFIGURATION_ERROR,
                     "Failed to generate JWT token: " + e.getMessage());
         }
     }
@@ -46,16 +45,17 @@ public class JwtTokenProvider {
         try {
             return generateToken(user.getId(), null);
         } catch (Exception e) {
-            throw new AuthException(ExitCode.JWT_CONFIGURATION_ERROR,
+            throw new AuthException(
+                    ExitCode.JWT_CONFIGURATION_ERROR,
                     "Failed to generate JWT token: " + e.getMessage());
         }
     }
 
-    public String generateToken(Long userId, String tokenType) {
+    public String generateToken(UUID userId, String tokenType) {
         return generateToken(userId, tokenType, Duration.parse(jwtExpirationString));
     }
 
-    public String generateToken(Long userId, String tokenType, Duration duration) {
+    public String generateToken(UUID userId, String tokenType, Duration duration) {
         try {
             Map<String, Object> claims = new HashMap<>();
             if (tokenType != null) {
@@ -68,19 +68,20 @@ public class JwtTokenProvider {
             return Jwts.builder()
                     .setClaims(claims)
                     .setId(UUID.randomUUID().toString())
-                    .setSubject(Long.toString(userId))
+                    .setSubject(userId.toString())
                     .setIssuedAt(Date.from(now))
                     .setExpiration(Date.from(expiryDate))
                     .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                     .compact();
         } catch (Exception e) {
-            throw new AuthException(ExitCode.JWT_CONFIGURATION_ERROR,
+            throw new AuthException(
+                    ExitCode.JWT_CONFIGURATION_ERROR,
                     "Failed to generate JWT token: " + e.getMessage());
         }
     }
 
-    public Long getUserIdFromToken(String token) {
-        return Long.parseLong(parseClaims(token).getSubject());
+    public UUID getUserIdFromToken(String token) {
+        return UUID.fromString(parseClaims(token).getSubject());
     }
 
     public String getJtiFromToken(String token) {
@@ -103,8 +104,8 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token)
                     .getBody();
         } catch (Exception e) {
-            throw new AuthException(ExitCode.TOKEN_INVALID,
-                    "Failed to parse JWT claims: " + e.getMessage());
+            throw new AuthException(
+                    ExitCode.TOKEN_INVALID, "Failed to parse JWT claims: " + e.getMessage());
         }
     }
 

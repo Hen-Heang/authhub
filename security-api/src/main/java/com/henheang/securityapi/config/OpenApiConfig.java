@@ -17,42 +17,41 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("AuthHub API")
-                        .version("1.0")
-                        .description("Authentication service with JWT and OAuth2 support")
-                        .termsOfService("https://www.example.com/terms")
-                        .contact(new Contact()
-                                .name("AuthHub Team")
-                                .url("https://www.example.com")
-                                .email("info@example.com"))
-                        .license(new License()
-                                .name("Apache 2.0")
-                                .url("https://www.apache.org/licenses/LICENSE-2.0")))
+                .info(
+                        new Info()
+                                .title("AuthHub API")
+                                .version("1.0")
+                                .description("Authentication service with JWT and OAuth2 support")
+                                .termsOfService("https://www.example.com/terms")
+                                .contact(
+                                        new Contact()
+                                                .name("AuthHub Team")
+                                                .url("https://www.example.com")
+                                                .email("info@example.com"))
+                                .license(
+                                        new License()
+                                                .name("Apache 2.0")
+                                                .url(
+                                                        "https://www.apache.org/licenses/LICENSE-2.0")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                .components(new Components()
-                        .addSecuritySchemes("bearerAuth",
-                                new SecurityScheme()
-                                        .name("bearerAuth")
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")));
+                .components(
+                        new Components()
+                                .addSecuritySchemes(
+                                        "bearerAuth",
+                                        new SecurityScheme()
+                                                .name("bearerAuth")
+                                                .type(SecurityScheme.Type.HTTP)
+                                                .scheme("bearer")
+                                                .bearerFormat("JWT")));
     }
 
     @Bean
     public GroupedOpenApi publicApi() {
-        return GroupedOpenApi.builder()
-                .group("public")
-                .pathsToMatch("/api/**")
-                .build();
+        return GroupedOpenApi.builder().group("public").pathsToMatch("/api/**").build();
     }
-
 
     @Bean
     public GroupedOpenApi authApi() {
-        return GroupedOpenApi.builder()
-                .group("auth")
-                .pathsToMatch("/api/auth/**")
-                .build();
+        return GroupedOpenApi.builder().group("auth").pathsToMatch("/api/auth/**").build();
     }
 }

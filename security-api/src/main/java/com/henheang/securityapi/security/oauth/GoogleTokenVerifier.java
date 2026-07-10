@@ -6,18 +6,17 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.henheang.commonapi.components.common.api.ExitCode;
 import com.henheang.securityapi.exception.AuthException;
+import java.security.GeneralSecurityException;
+import java.util.Arrays;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.security.GeneralSecurityException;
-import java.util.Arrays;
-import java.util.List;
-
 /**
- * Verifies a Google Sign-In ID token server-side: signature, issuer, audience,
- * expiry. Fails closed - if no client id is configured, every token is
- * rejected rather than silently accepting an unverified audience.
+ * Verifies a Google Sign-In ID token server-side: signature, issuer, audience, expiry. Fails closed
+ * - if no client id is configured, every token is rejected rather than silently accepting an
+ * unverified audience.
  */
 @Component
 public class GoogleTokenVerifier {
@@ -30,7 +29,8 @@ public class GoogleTokenVerifier {
     public GooglePrincipal verify(String idTokenString) {
         List<String> clientIds = configuredClientIds();
         if (clientIds.isEmpty()) {
-            throw new AuthException(ExitCode.OAUTH_PROVIDER_NOT_SUPPORTED,
+            throw new AuthException(
+                    ExitCode.OAUTH_PROVIDER_NOT_SUPPORTED,
                     "Google sign-in is not configured on this server (google.client-ids is empty)");
         }
 
@@ -46,22 +46,22 @@ public class GoogleTokenVerifier {
             }
 
             return new GooglePrincipal(
-                    payload.getSubject(),
-                    payload.getEmail(),
-                    (String) payload.get("name")
-            );
+                    payload.getSubject(), payload.getEmail(), (String) payload.get("name"));
         } catch (AuthException e) {
             throw e;
         } catch (GeneralSecurityException | java.io.IOException | IllegalArgumentException e) {
-            throw new AuthException(ExitCode.OAUTH_ERROR, "Failed to verify Google ID token: " + e.getMessage());
+            throw new AuthException(
+                    ExitCode.OAUTH_ERROR, "Failed to verify Google ID token: " + e.getMessage());
         }
     }
 
     private synchronized GoogleIdTokenVerifier getVerifier(List<String> clientIds) {
         if (verifier == null) {
-            verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                    .setAudience(clientIds)
-                    .build();
+            verifier =
+                    new GoogleIdTokenVerifier.Builder(
+                                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                            .setAudience(clientIds)
+                            .build();
         }
         return verifier;
     }
@@ -76,6 +76,5 @@ public class GoogleTokenVerifier {
                 .toList();
     }
 
-    public record GooglePrincipal(String subject, String email, String name) {
-    }
+    public record GooglePrincipal(String subject, String email, String name) {}
 }

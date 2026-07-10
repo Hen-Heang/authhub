@@ -19,6 +19,9 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
 
+mfa:
+  encryption-key: ${MFA_ENCRYPTION_KEY}
+
 logging:
   level:
     root: WARN

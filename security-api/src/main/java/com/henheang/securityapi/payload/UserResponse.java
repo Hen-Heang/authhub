@@ -1,14 +1,14 @@
 package com.henheang.securityapi.payload;
 
+import java.util.UUID;
 import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
-
 public class UserResponse {
 
-    private Long Id;
+    private UUID id;
 
     private String name;
 
@@ -22,9 +22,16 @@ public class UserResponse {
 
     private String provider;
 
-@Builder
-    public UserResponse(Long id, String name, String email,String phoneNumber, Boolean emailVerified, String imageUrl, String provider) {
-        Id = id;
+    @Builder
+    public UserResponse(
+            UUID id,
+            String name,
+            String email,
+            String phoneNumber,
+            Boolean emailVerified,
+            String imageUrl,
+            String provider) {
+        this.id = id;
         this.name = name;
         this.email = email;
         this.phoneNumber = phoneNumber;
@@ -32,6 +39,4 @@ public class UserResponse {
         this.imageUrl = imageUrl;
         this.provider = provider;
     }
-
-
 }

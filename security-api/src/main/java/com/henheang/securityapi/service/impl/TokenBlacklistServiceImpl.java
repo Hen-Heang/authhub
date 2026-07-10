@@ -3,11 +3,10 @@ package com.henheang.securityapi.service.impl;
 import com.henheang.securityapi.domain.RevokedToken;
 import com.henheang.securityapi.repository.RevokedTokenRepository;
 import com.henheang.securityapi.service.TokenBlacklistService;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
