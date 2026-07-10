@@ -1,9 +1,4 @@
-plugins {
-    id 'java'
-    id 'org.springframework.boot'
-    id 'io.spring.dependency-management'
-}
-
+// Runnable auth service, also consumed as a library by todoapi (needs `jar` on too).
 bootJar {
     enabled = true
 }
@@ -11,28 +6,3 @@ bootJar {
 jar {
     enabled = true
 }
-
-group = 'com.henheang'
-version = '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Depend on common-api only
-    implementation project(':common-api')
-
-    // Security specific dependencies are handled in root build.gradle
-    // No additional dependencies needed here as they're defined in the root
-
-    // Testing
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-}
-
-test {
-    useJUnitPlatform()
-}
-
-tasks.register('prepareKotlinBuildScriptModel') {}

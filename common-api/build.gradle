@@ -1,9 +1,4 @@
-plugins {
-    id 'java'
-    id 'org.springframework.boot'
-    id 'io.spring.dependency-management'
-}
-
+// Library module: consumed by security-api/todoapi, never run standalone.
 bootJar {
     enabled = false
 }
@@ -11,25 +6,3 @@ bootJar {
 jar {
     enabled = true
 }
-
-group = 'com.henheang'
-version = '1.0-SNAPSHOT'
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // Core Spring Boot dependencies (inherited from parent)
-    // No project dependencies to avoid circular references
-
-    // Testing
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-}
-
-test {
-    useJUnitPlatform()
-}
-
-tasks.register('prepareKotlinBuildScriptModel') {}

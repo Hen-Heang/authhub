@@ -1,6 +1,15 @@
 plugins {
     id 'org.springframework.boot' version '3.5.15' apply false
     id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '7.0.2' apply false
+}
+
+// Shared dependency versions used by more than one module. Module-specific
+// dependency versions stay local to that module's `project(':x') { }` block.
+ext {
+    mapstructVersion = '1.5.5.Final'
+    springdocVersion = '2.8.6'
+    jjwtVersion = '0.11.5'
 }
 
 allprojects {
@@ -16,6 +25,10 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'org.springframework.boot'
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'checkstyle'
+    apply plugin: 'pmd'
+    apply plugin: 'jacoco'
 
     java {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -39,11 +52,53 @@ subprojects {
         // Testing
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testImplementation 'org.junit.jupiter:junit-jupiter'
-
     }
 
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        finalizedBy jacocoTestReport
+        // Tests always run against the "test" Spring profile (separate DB,
+        // non-sensitive JWT secret default) — see application-test.yml.
+        systemProperty 'spring.profiles.active', 'test'
+    }
+
+    jacoco {
+        toolVersion = '0.8.12'
+    }
+
+    jacocoTestReport {
+        dependsOn test
+        reports {
+            xml.required = true
+            html.required = true
+        }
+    }
+
+    // Checkstyle/PMD are advisory for now (reports only) so pre-existing code
+    // doesn't fail `build` — see docs/coding-standards.md before tightening.
+    checkstyle {
+        toolVersion = '10.20.2'
+        configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+        ignoreFailures = true
+        maxWarnings = Integer.MAX_VALUE
+    }
+
+    pmd {
+        toolVersion = '7.9.0'
+        ruleSetFiles = rootProject.files('config/pmd/ruleset.xml')
+        ruleSets = []
+        ignoreFailures = true
+        consoleOutput = true
+    }
+
+    spotless {
+        java {
+            target 'src/*/java/**/*.java'
+            googleJavaFormat('1.25.2').aosp()
+            removeUnusedImports()
+            trimTrailingWhitespace()
+            endWithNewline()
+        }
     }
 }
 
@@ -51,10 +106,10 @@ subprojects {
 project(':common-api') {
     dependencies {
         // Only basic dependencies, no project dependencies
-        implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-        annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+        implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+        annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
         implementation 'commons-beanutils:commons-beanutils:1.9.4'
-        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     }
 }
 
@@ -74,9 +129,9 @@ project(':security-api') {
         implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 
         // JWT
-        implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-        implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
-        implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+        implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
 
         // Rate limiting
         implementation 'com.bucket4j:bucket4j_jdk17-core:8.14.0'
@@ -88,12 +143,12 @@ project(':security-api') {
         implementation 'com.google.api-client:google-api-client:2.8.0'
 
         // Mapping
-        implementation 'org.mapstruct:mapstruct:1.5.5.Final'
-        annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+        implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+        annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
         implementation 'commons-beanutils:commons-beanutils:1.9.4'
 
         // Documentation
-        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     }
 }
 
@@ -104,7 +159,13 @@ project(':todoapi') {
         implementation project(':common-api')
         implementation project(':security-api')
 
+        // Security + JWT (todoapi validates tokens issued by security-api)
+        implementation 'org.springframework.boot:spring-boot-starter-security'
+        implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+        implementation "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
         // Documentation
-        implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6'
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
     }
 }
