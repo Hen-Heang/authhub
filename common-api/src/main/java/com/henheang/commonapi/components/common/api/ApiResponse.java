@@ -17,6 +17,7 @@ public class ApiResponse<T> {
     private ApiStatus statusCode;
 
     private T data;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Common common;
 
@@ -29,14 +30,14 @@ public class ApiResponse<T> {
         this.data = data;
     }
 
-    public ApiResponse(ApiStatus statusCode, T data,Common common) {
+    public ApiResponse(ApiStatus statusCode, T data, Common common) {
         this.statusCode = statusCode;
         this.data = data;
         this.common = common;
     }
 
     @Builder
-    public ApiResponse(StatusCode status, T data , Common common) {
+    public ApiResponse(StatusCode status, T data, Common common) {
         this.statusCode = new ApiStatus(status);
         this.data = data;
         this.common = common;

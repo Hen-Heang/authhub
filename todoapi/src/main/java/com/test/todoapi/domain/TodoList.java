@@ -1,16 +1,13 @@
 package com.test.todoapi.domain;
 
-
 import com.henheang.securityapi.domain.User;
 import jakarta.persistence.*;
-import lombok.*;
-
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import lombok.*;
 
 @Getter
 @Setter
@@ -18,7 +15,6 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "todo_list")
-
 public class TodoList {
 
     @Id
@@ -36,13 +32,13 @@ public class TodoList {
     @Column(name = "description", length = 500)
     private String description;
 
-
     private String color;
 
     private String position = "0"; // The default position is 0
 
     @Column(name = "is_archived", nullable = false)
-    private Boolean isArchived = false; // The Default value is false, indicating the list is not archived
+    private Boolean isArchived =
+            false; // The Default value is false, indicating the list is not archived
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -51,16 +47,15 @@ public class TodoList {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "todoList", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<TodoItem> todoItems = new ArrayList<>(); // Assuming TodoItem is another entity related to TodoList
-
+    private List<TodoItem> todoItems =
+            new ArrayList<>(); // Assuming TodoItem is another entity related to TodoList
 
     @OneToMany(mappedBy = "todoList", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<ListShare> todoListShares = new HashSet<>(); // Assuming TodoListShare is another entity related to TodoList
-
+    private Set<ListShare> todoListShares =
+            new HashSet<>(); // Assuming TodoListShare is another entity related to TodoList
 
     @OneToMany(mappedBy = "todoList", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ListTag> todoListTags = new HashSet<>();
-
 
     @PrePersist
     protected void onCreate() {
@@ -72,17 +67,4 @@ public class TodoList {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

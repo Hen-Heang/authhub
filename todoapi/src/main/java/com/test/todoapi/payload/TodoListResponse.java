@@ -1,17 +1,14 @@
 package com.test.todoapi.payload;
 
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 public class TodoListResponse {
 
     @JsonProperty("list_id")
@@ -36,6 +33,4 @@ public class TodoListResponse {
 
     @JsonProperty("item_count")
     private Integer itemCount;
-
-
 }

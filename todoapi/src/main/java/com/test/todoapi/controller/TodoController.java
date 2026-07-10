@@ -21,7 +21,9 @@ public class TodoController extends BaseController {
     private final TodoService todoService;
 
     @PostMapping("/create")
-    @Operation(summary = "Create a todo list", description = "Creates a new todo list for the authenticated user")
+    @Operation(
+            summary = "Create a todo list",
+            description = "Creates a new todo list for the authenticated user")
     @ApiResponse(responseCode = "200", description = "Todo list created successfully")
     public Object createTodoList(@Valid @RequestBody TodoListRequest request) {
         todoService.createTodoList(request);

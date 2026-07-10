@@ -5,8 +5,8 @@ public enum PermissionLevel {
     EDIT("edit"),
     ADMIN("admin");
 
-
     private final String value;
+
     private PermissionLevel(String value) {
         this.value = value;
     }
@@ -19,6 +19,4 @@ public enum PermissionLevel {
         }
         throw new IllegalArgumentException("Unknown permission level: " + value);
     }
-
-
 }

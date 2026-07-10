@@ -1,4 +1,3 @@
 package com.test.todoapi.payload;
 
-public class ShareListRequest {
-}
+public class ShareListRequest {}

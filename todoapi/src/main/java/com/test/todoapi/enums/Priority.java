@@ -1,20 +1,14 @@
 package com.test.todoapi.enums;
 
-
 import lombok.Getter;
 import lombok.Setter;
 
-
 public enum Priority {
-
-
     LOW("Low"),
     MEDIUM("Medium"),
     HIGH("High");
 
-    @Getter
-    @Setter
-    private String value;
+    @Getter @Setter private String value;
 
     Priority(String value) {
         this.value = value;

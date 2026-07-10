@@ -4,7 +4,8 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter
-public abstract class AbstractEnumConverter<T extends Enum<T> & GenericEnum<T, E>, E> implements AttributeConverter<T, E> {
+public abstract class AbstractEnumConverter<T extends Enum<T> & GenericEnum<T, E>, E>
+        implements AttributeConverter<T, E> {
     private final Class<T> clazz;
 
     public AbstractEnumConverter(Class<T> clazz) {
@@ -26,7 +27,7 @@ public abstract class AbstractEnumConverter<T extends Enum<T> & GenericEnum<T, E
             }
         }
 
-//        throw new UnsupportedOperationException();
+        //        throw new UnsupportedOperationException();
         return null;
     }
 }

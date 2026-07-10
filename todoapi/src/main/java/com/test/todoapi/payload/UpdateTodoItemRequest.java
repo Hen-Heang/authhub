@@ -1,6 +1,3 @@
 package com.test.todoapi.payload;
 
-public class UpdateTodoItemRequest {
-
-
-}
+public class UpdateTodoItemRequest {}

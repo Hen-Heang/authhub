@@ -2,11 +2,11 @@ package com.test.todoapi.domain;
 
 import com.henheang.securityapi.domain.User;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "todo_history")
@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class TodoHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

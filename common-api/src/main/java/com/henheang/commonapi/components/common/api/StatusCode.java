@@ -1,9 +1,8 @@
 package com.henheang.commonapi.components.common.api;
 
-import lombok.Getter;
-
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
 
 @Getter
 public enum StatusCode {
@@ -54,7 +53,7 @@ public enum StatusCode {
     USER_ACCOUNT_REMOVED(40411, "User account is removed", 404),
     CLIENT_ID_NOT_FOUND(40412, "Client id was not found", 404),
 
-    //500 Internal Server Error
+    // 500 Internal Server Error
     INTERNAL_SERVER_ERROR(50000, "Internal Server Error", 500),
     POINT_PROCESSING_ERROR(50001, "Point processing error", 500),
     INSUFFICIENT_POINTS(50002, "Insufficient points", 500),

@@ -24,8 +24,6 @@ public enum Status {
         };
     }
 
-
-
     public static Status fromValue(String value) {
         for (Status status : Status.values()) {
             if (status.value.equals(value)) {
@@ -34,5 +32,4 @@ public enum Status {
         }
         throw new IllegalArgumentException("Unknown value: " + value);
     }
-
 }

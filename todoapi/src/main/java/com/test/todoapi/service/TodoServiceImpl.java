@@ -22,12 +22,15 @@ public class TodoServiceImpl implements TodoService {
     public void createTodoList(TodoListRequest request) {
         // Get the user by ID
         TodoList todoList = new TodoList();
-        todoList.setUser(userRepository.findById(AuthUtils.getCurrentUserId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found")));
+        todoList.setUser(
+                userRepository
+                        .findById(AuthUtils.getCurrentUserId())
+                        .orElseThrow(() -> new IllegalArgumentException("User not found")));
         todoList.setTitle(request.getTitle());
         todoList.setDescription(request.getDescription());
         todoList.setColor(request.getColor());
-        todoList.setPosition(request.getPosition() != null ? request.getPosition().toString() : "0");
+        todoList.setPosition(
+                request.getPosition() != null ? request.getPosition().toString() : "0");
 
         TodoList savedTodoList = todoRepository.save(todoList);
         mapToResponse(savedTodoList);
@@ -43,7 +46,10 @@ public class TodoServiceImpl implements TodoService {
                 .isArchived(savedTodoList.getIsArchived())
                 .createdAt(savedTodoList.getCreatedAt())
                 .updatedAt(savedTodoList.getUpdatedAt())
-                .itemCount(savedTodoList.getTodoItems() != null ? savedTodoList.getTodoItems().size() : 0)
+                .itemCount(
+                        savedTodoList.getTodoItems() != null
+                                ? savedTodoList.getTodoItems().size()
+                                : 0)
                 .build();
     }
 }

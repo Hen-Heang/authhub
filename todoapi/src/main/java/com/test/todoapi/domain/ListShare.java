@@ -3,11 +3,11 @@ package com.test.todoapi.domain;
 import com.henheang.securityapi.domain.User;
 import com.test.todoapi.enums.PermissionLevel;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "list_shares")

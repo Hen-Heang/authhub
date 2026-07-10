@@ -12,7 +12,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class ListTag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,5 +25,3 @@ public class ListTag {
     @JoinColumn(name = "tag_id", nullable = false)
     private Tag tag;
 }
-
-

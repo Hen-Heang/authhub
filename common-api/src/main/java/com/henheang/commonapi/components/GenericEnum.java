@@ -6,5 +6,6 @@ public interface GenericEnum<T, E> {
 
     @JsonValue
     E getValue();
+
     String getLabel();
 }

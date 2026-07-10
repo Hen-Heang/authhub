@@ -11,7 +11,6 @@ import lombok.Setter;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class TodoListRequest {
 
     @NotBlank(message = "Title is required")
@@ -24,6 +23,4 @@ public class TodoListRequest {
     private String color;
 
     private Integer position;
-
-
 }
