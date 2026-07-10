@@ -1,5 +1,7 @@
 # AuthHub
 
+[![CI](https://github.com/Hen-Heang/authhub/actions/workflows/ci.yml/badge.svg)](https://github.com/Hen-Heang/authhub/actions/workflows/ci.yml)
+
 A multi-module **Spring Boot 3.5** monorepo for authentication and a sample
 business API. It provides JWT-based authentication (with refresh + revocation),
 Google ID-token login, MFA (TOTP), password reset, audit logging, and rate
@@ -54,20 +56,32 @@ createdb -U postgres jwt_auth
 # or inside psql:  CREATE DATABASE jwt_auth;
 ```
 
-### Environment variables (optional but recommended)
+### Configuration profiles
 
-The configs default to placeholders; override these for real email and a secure
-JWT secret:
+Each runnable module (`common-api`'s context, `security-api`, `todoapi`) loads
+`application.yml` plus a profile file selected by `SPRING_PROFILES_ACTIVE`
+(Spring's standard `application-{profile}.yml` convention):
+
+| Profile | File | Used by | Secrets |
+|---------|------|---------|---------|
+| `local` (default) | `application-local.yml` | `./gradlew bootRun` with no env vars | Has fallback defaults (DB password `123`, placeholder JWT secret) for zero-config local dev. **Git-ignored** — copy `.env.example` and fill in your own values instead of relying on the placeholder. |
+| `dev` | `application-dev.yml` | Shared dev/staging | Requires real `DB_PASSWORD` / `JWT_SECRET` env vars, no fallback. |
+| `test` | `application-test.yml` | `./gradlew test` / CI (forced via the root `build.gradle` `Test` task config) | Separate `jwt_auth_test` DB, `ddl-auto: create-drop`, a fixed non-sensitive JWT secret default (safe — test-only). |
+| `prod` | `application-prod.yml` | Production | No fallback defaults anywhere — fails fast at startup if `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` / `JWT_SECRET` aren't set. `ddl-auto: validate` (no auto schema changes). |
+
+Copy `.env.example` to `.env` (or export the vars directly) and set:
 
 ```bash
+export SPRING_PROFILES_ACTIVE="local"   # local | dev | test | prod
+export DB_PASSWORD="..."
+export JWT_SECRET="<base64 64-byte secret>"   # generate via JwtSecretGenerator#main
 export MAIL_USERNAME="your-email@gmail.com"
 export MAIL_PASSWORD="your-gmail-app-password"
-export JWT_SECRET="<base64-64-byte-secret>"
 ```
 
-> ⚠️ `security-api` currently has a hard-coded JWT secret in `application.yml`
-> for local dev. For anything beyond local dev, move it to the `JWT_SECRET`
-> env var and never commit a real secret.
+> ⚠️ No `application*.yml` file commits a real secret anymore. See
+> [SECURITY.md](SECURITY.md) for the full policy and how to rotate the
+> secret that *was* previously committed in `security-api`'s local config.
 
 ---
 
@@ -86,6 +100,19 @@ From the `AuthHub/` directory:
 # Skip tests
 ./gradlew build -x test
 ```
+
+### Code quality tooling
+
+Wired into every module via the root `build.gradle`:
+
+| Tool | Task | Enforced? |
+|------|------|-----------|
+| **Spotless** (Google Java Format) | `spotlessCheck` / `spotlessApply` | Yes — part of `check`/`build`. Run `./gradlew spotlessApply` to auto-format. |
+| **Checkstyle** | `checkstyleMain` / `checkstyleTest` | Advisory — reports only (`ignoreFailures = true`) until the existing codebase is brought into compliance. Rules in `config/checkstyle/checkstyle.xml`. |
+| **PMD** | `pmdMain` / `pmdTest` | Advisory — same reasoning. Rules in `config/pmd/ruleset.xml`. |
+| **JaCoCo** | `jacocoTestReport` | Runs after every `test` task; reports under `*/build/reports/jacoco/`. No minimum-coverage gate yet. |
+
+See `docs/coding-standards.md` before tightening any of these to fail the build.
 
 ## Run
 
@@ -164,9 +191,13 @@ be revoked via `TokenBlacklistService` (backed by `RevokedToken`).
 
 ```
 AuthHub/
-├── build.gradle           # Root: plugins, shared deps, per-module wiring
+├── build.gradle           # Root: plugins, shared deps, per-module wiring, quality tooling
 ├── settings.gradle        # Declares the 3 modules
 ├── gradlew / gradlew.bat  # Gradle wrapper
+├── config/checkstyle/, config/pmd/  # Checkstyle & PMD rule files (see build.gradle)
+├── .github/workflows/ci.yml         # CI: build + test + lint reports on push/PR
+├── .env.example            # Template for local env vars — copy to .env
+├── ROADMAP.md / CHANGELOG.md / SECURITY.md / CONTRIBUTING.md / LICENSE
 │
 ├── common-api/            # Shared library (no bootJar)
 │   └── src/main/java/com/henheang/commonapi/
@@ -225,19 +256,21 @@ AuthHub/
 
 ## Configuration Reference
 
-Per-module config lives in `src/main/resources/application.yml`. Key settings
-(shared shape across modules):
+Per-module config lives in `src/main/resources/application.yml` (profile-agnostic
+base) plus `application-{local,dev,test,prod}.yml` (see
+[Configuration profiles](#configuration-profiles) above). Key settings (shared
+shape across modules):
 
-| Key | Default | Notes |
-|-----|---------|-------|
-| `server.port` | 8080 (`security-api`) / 8082 (`todoapi`) | One per runnable module |
-| `spring.datasource.url` | `jdbc:postgresql://localhost:5432/jwt_auth` | Point at your DB |
-| `spring.jpa.hibernate.ddl-auto` | `update` | Auto-syncs schema in dev, no manual migrations yet |
-| `jwt.secret` | (hard-coded key) | **Externalize via `JWT_SECRET` beyond local dev** |
+| Key | Source | Notes |
+|-----|--------|-------|
+| `server.port` | `${SERVER_PORT}` | Defaults: 8081 (`common-api`, not run directly), 8080 (`security-api`), 8082 (`todoapi`) |
+| `spring.datasource.url` | `${DB_URL}` | Defaults to `jdbc:postgresql://localhost:5432/jwt_auth` (`jwt_auth_test` under the `test` profile) |
+| `spring.jpa.hibernate.ddl-auto` | per profile | `update` (local/dev), `create-drop` (test), `validate` (prod — no auto schema changes) |
+| `jwt.secret` | `${JWT_SECRET}` | No fallback default outside `local`/`test`. **Required env var in `dev`/`prod`.** |
 | `jwt.expiration` | `PT24H` | Access-token lifetime (ISO-8601 duration) |
 | `jwt.refresh-token.expiration` | `P7D` | Refresh-token lifetime |
-| `app.frontend-url` | `http://localhost:3000` | Used for CORS / reset links |
-| `spring.mail.*` | Gmail SMTP | Needs `MAIL_USERNAME` / `MAIL_PASSWORD` |
+| `app.frontend-url` | `${FRONTEND_URL}` | Used for CORS / reset links |
+| `spring.mail.*` | `${MAIL_USERNAME}` / `${MAIL_PASSWORD}` | Gmail SMTP |
 
 Google login is verified via ID token (`security/oauth/GoogleTokenVerifier`) —
 there is no cookie-based OAuth2 redirect flow, and the old custom OTP feature has
