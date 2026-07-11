@@ -45,7 +45,7 @@ public class DataInitializer implements CommandLineRunner {
                 permissionService.getOrCreatePermission("audit", "read", "Read audit logs");
 
         for (Permission permission : List.of(userRead, userUpdate, userDelete)) {
-            grantIfMissing(userRole, permission);
+            userRole = grantIfMissing(userRole, permission);
         }
         for (Permission permission :
                 List.of(
@@ -56,19 +56,25 @@ public class DataInitializer implements CommandLineRunner {
                         roleManage,
                         permissionManage,
                         auditRead)) {
-            grantIfMissing(adminRole, permission);
+            adminRole = grantIfMissing(adminRole, permission);
         }
     }
 
     // getOrCreateRole/getOrCreatePermission are idempotent, but grantPermission
     // isn't checked for an existing grant - this guard is what makes re-running
     // this initializer on every app restart a no-op after the first run.
-    private void grantIfMissing(Role role, Permission permission) {
+    //
+    // Returns the (possibly merged) role so callers chain the updated version:
+    // grantPermission bumps the row's @Version on save, and reusing the stale
+    // in-memory role across multiple grants in the same loop throws
+    // StaleObjectStateException on the second grant.
+    private Role grantIfMissing(Role role, Permission permission) {
         boolean alreadyGranted =
                 role.getPermissions().stream()
                         .anyMatch(granted -> granted.getId().equals(permission.getId()));
-        if (!alreadyGranted) {
-            roleService.grantPermission(role, permission);
+        if (alreadyGranted) {
+            return role;
         }
+        return roleService.grantPermission(role, permission);
     }
 }

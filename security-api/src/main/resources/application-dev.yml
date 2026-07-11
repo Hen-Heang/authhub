@@ -15,10 +15,10 @@ spring:
     show-sql: false
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:82eec2c24d73493a9b3c257f36ea88d9122631c3bbb468a9b9e31b74f8783761}
 
 mfa:
-  encryption-key: ${MFA_ENCRYPTION_KEY}
+  encryption-key: ${MFA_ENCRYPTION_KEY:OF2ggUhJDdqTAS/Y70UescJrl55PqaQMYX7Oq83JJ4o}
 
 logging:
   level:
