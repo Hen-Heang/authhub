@@ -94,8 +94,6 @@ public class WebSecurityConfig {
                                         .authenticated()
                                         .requestMatchers("/api/auth/**", "/api/v1/auth/**")
                                         .permitAll()
-                                        .requestMatchers("/api/todo/v1/create")
-                                        .permitAll()
                                         .requestMatchers("/api/public/**")
                                         .permitAll()
                                         .requestMatchers("/api/users/**")

@@ -4,8 +4,10 @@
 
 A multi-module **Spring Boot 3.5** monorepo for authentication and a sample
 business API. It provides JWT-based authentication (with refresh + revocation),
-Google ID-token login, MFA (TOTP), password reset, audit logging, and rate
-limiting — exposed as reusable modules that other services build on top of.
+Google ID-token login, MFA (TOTP with one-time backup codes), email
+verification, password reset, account lockout with self-service unlock, RBAC
+(roles/permissions), audit logging, and rate limiting — exposed as reusable
+modules that other services build on top of.
 
 - **Group:** `com.henheang`
 - **Java:** 17 (set in the root `build.gradle`)
@@ -33,7 +35,7 @@ todoapi      (sample business API protected by security-api)           ── ru
 | Module         | Port  | bootJar | Purpose |
 |----------------|-------|---------|---------|
 | `common-api`   | —     | ❌ off  | Shared library: API response envelopes (`ApiResponse`, `ApiStatus`, `StatusCode`), pagination, enum converters, interceptors. Built as a plain `jar` and consumed by the other modules — not run directly. |
-| `security-api` | 8080  | ✅ on   | Core authentication service: signup/login, JWT issue/refresh/revocation, Google ID-token login, MFA, password reset, user management, audit logging, rate limiting, Swagger UI. |
+| `security-api` | 8080  | ✅ on   | Core authentication service: signup/login, JWT issue/refresh/revocation, Google ID-token login, MFA (TOTP + backup codes), email verification, password reset, account lockout/unlock, RBAC (roles/permissions), user management, audit logging, rate limiting, Swagger UI. |
 | `todoapi`      | 8082  | ✅ on   | Example business API (to-do lists/items) that depends on `security-api` for authentication. |
 
 Dependency wiring lives in the **root `build.gradle`** (`subprojects { ... }`
@@ -46,8 +48,12 @@ plus per-project blocks), so most dependencies are declared once at the top.
 1. **JDK 17** (the build targets Java 17).
 2. **PostgreSQL** running locally on port `5432` with a database named `jwt_auth`.
    - Default credentials in the configs: user `postgres`, password `123`.
-   - Schema is auto-created/updated on startup (`spring.jpa.hibernate.ddl-auto: update`).
-3. *(Optional)* Gmail SMTP credentials for email-based features (password reset).
+   - Schema is managed by **Flyway** (`security-api/src/main/resources/db/migration/`) —
+     migrations run automatically on startup. `spring.jpa.hibernate.ddl-auto` is
+     `validate` in every profile; Hibernate checks the schema matches but never
+     creates/alters it.
+3. *(Optional)* Gmail SMTP credentials for email-based features (password reset,
+   email verification, account-unlock emails).
 
 ### Create the database
 
@@ -65,9 +71,13 @@ Each runnable module (`common-api`'s context, `security-api`, `todoapi`) loads
 | Profile | File | Used by | Secrets |
 |---------|------|---------|---------|
 | `local` (default) | `application-local.yml` | `./gradlew bootRun` with no env vars | Has fallback defaults (DB password `123`, placeholder JWT secret) for zero-config local dev. **Git-ignored** — copy `.env.example` and fill in your own values instead of relying on the placeholder. |
-| `dev` | `application-dev.yml` | Shared dev/staging | Requires real `DB_PASSWORD` / `JWT_SECRET` env vars, no fallback. |
-| `test` | `application-test.yml` | `./gradlew test` / CI (forced via the root `build.gradle` `Test` task config) | Separate `jwt_auth_test` DB, `ddl-auto: create-drop`, a fixed non-sensitive JWT secret default (safe — test-only). |
-| `prod` | `application-prod.yml` | Production | No fallback defaults anywhere — fails fast at startup if `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` / `JWT_SECRET` aren't set. `ddl-auto: validate` (no auto schema changes). |
+| `dev` | `application-dev.yml` | Shared dev/staging | Has a hardcoded fallback JWT secret / MFA encryption key for convenience; still expects real `DB_PASSWORD`. |
+| `test` | `application-test.yml` | `./gradlew test` / CI (forced via the root `build.gradle` `Test` task config) | Separate `jwt_auth_test` DB, a fixed non-sensitive JWT secret default (safe — test-only). |
+| `prod` | `application-prod.yml` | Production | No fallback defaults anywhere — fails fast at startup if `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` / `JWT_SECRET` / `MFA_ENCRYPTION_KEY` aren't set. |
+
+`spring.jpa.hibernate.ddl-auto` is `validate` in **every** profile — Flyway
+(`spring.flyway.enabled: true`) is the sole schema authority; Hibernate only
+verifies the schema on startup.
 
 Copy `.env.example` to `.env` (or export the vars directly) and set:
 
@@ -75,8 +85,10 @@ Copy `.env.example` to `.env` (or export the vars directly) and set:
 export SPRING_PROFILES_ACTIVE="local"   # local | dev | test | prod
 export DB_PASSWORD="..."
 export JWT_SECRET="<base64 64-byte secret>"   # generate via JwtSecretGenerator#main
+export MFA_ENCRYPTION_KEY="<base64 32-byte AES key>"   # generate via `openssl rand -base64 32`
 export MAIL_USERNAME="your-email@gmail.com"
 export MAIL_PASSWORD="your-gmail-app-password"
+export GOOGLE_CLIENT_IDS=""   # comma-separated OAuth client IDs; empty disables Google sign-in
 ```
 
 > ⚠️ No `application*.yml` file commits a real secret anymore. See
@@ -141,44 +153,82 @@ Once `security-api` is up, open the API docs:
 ### Authentication — `/api/auth`
 | Method | Path                          | Description |
 |--------|-------------------------------|-------------|
-| POST   | `/api/auth/signup`            | Register a new user |
-| POST   | `/api/auth/login`              | Authenticate, returns access + refresh tokens |
-| POST   | `/api/auth/oauth2/google`      | Log in with a Google ID token |
-| POST   | `/api/auth/refresh`            | Exchange a refresh token for a new access token |
-| POST   | `/api/auth/logout`             | Revoke a refresh token |
+| POST   | `/api/auth/signup`            | Register a new local account |
+| POST   | `/api/auth/login`              | Authenticate; returns tokens, or an MFA challenge if MFA is enabled |
+| POST   | `/api/auth/oauth2/google`      | Log in/sign up with a Google ID token (server-verified, no redirect flow) |
+| POST   | `/api/auth/refresh`            | Rotate a refresh token for a new access + refresh token pair (single-use) |
+| POST   | `/api/auth/logout`             | Revoke the refresh token and blacklist the current access token |
 | GET    | `/api/auth/user`               | Get the current authenticated user |
 | POST   | `/api/auth/forgot-password`    | Start password reset (sends email token) |
 | GET    | `/api/auth/reset-password?token=` | Validate a reset token |
 | POST   | `/api/auth/reset-password`     | Set a new password |
+| POST   | `/api/auth/verify-email`       | Confirm email via emailed verification token |
+| POST   | `/api/auth/resend-verification` | Resend the email-verification email |
+| POST   | `/api/auth/unlock-account`     | Unlock a locked account via emailed unlock token |
+| POST   | `/api/auth/resend-unlock-link` | Resend the account-unlock email |
 
 ### MFA — `/api/auth/mfa`
 | Method | Path             | Description |
 |--------|------------------|-------------|
-| POST   | `/api/auth/mfa/setup`   | Generate a new TOTP secret/QR for the current user |
-| POST   | `/api/auth/mfa/enable`  | Confirm a TOTP code and enable MFA |
-| POST   | `/api/auth/mfa/disable` | Disable MFA for the current user |
-| POST   | `/api/auth/mfa/verify`  | Verify a TOTP code during login |
+| POST   | `/api/auth/mfa/setup`   | Generate a new TOTP secret/QR for the current user (stays disabled until `/enable`) |
+| POST   | `/api/auth/mfa/enable`  | Confirm a live TOTP code, enable MFA, and issue one-time backup codes |
+| POST   | `/api/auth/mfa/disable` | Disable MFA (requires a valid TOTP or backup code) |
+| POST   | `/api/auth/mfa/verify`  | Exchange an MFA challenge token + TOTP/backup code for real access/refresh tokens |
+| POST   | `/api/auth/mfa/backup-codes/regenerate` | Invalidate all backup codes and issue a fresh set of 10 |
 
 ### Users — `/api/users`
-| Method | Path               | Description |
-|--------|--------------------|-------------|
-| GET    | `/api/users`       | List users |
-| PATCH  | `/api/users/{id}`  | Update a user |
-| DELETE | `/api/users/{id}`  | Delete a user |
+| Method | Path               | Auth | Description |
+|--------|--------------------|------|-------------|
+| GET    | `/api/users`       | ADMIN | List users |
+| PATCH  | `/api/users/{id}`  | ADMIN or self | Update a user |
+| DELETE | `/api/users/{id}`  | ADMIN or self | Soft-delete a user |
+| PATCH  | `/api/users/{id}/unlock` | ADMIN | Manually unlock a locked account |
+
+### RBAC — `/api/admin/permissions`, `/api/admin/roles`, `/api/admin/users/{userId}/roles`
+All endpoints below require the `ADMIN` role.
+
+| Method | Path                              | Description |
+|--------|------------------------------------|-------------|
+| GET    | `/api/admin/permissions`          | List all permissions |
+| GET    | `/api/admin/permissions/{id}`     | Get one permission |
+| POST   | `/api/admin/permissions`          | Create a permission |
+| DELETE | `/api/admin/permissions/{id}`     | Soft-delete a permission |
+| GET    | `/api/admin/roles`                | List all roles |
+| GET    | `/api/admin/roles/{id}`           | Get one role |
+| POST   | `/api/admin/roles`                | Create a role |
+| PATCH  | `/api/admin/roles/{id}`           | Update a role |
+| DELETE | `/api/admin/roles/{id}`           | Soft-delete a role |
+| POST   | `/api/admin/roles/{roleId}/permissions/{permissionId}` | Grant a permission to a role |
+| DELETE | `/api/admin/roles/{roleId}/permissions/{permissionId}` | Revoke a permission from a role |
+| GET    | `/api/admin/users/{userId}/roles` | List roles assigned to a user |
+| POST   | `/api/admin/users/{userId}/roles/{roleId}` | Assign a role to a user |
+| DELETE | `/api/admin/users/{userId}/roles/{roleId}` | Revoke a role from a user |
+
+Permission checks (`hasPermission(...)` / `@PreAuthorize`) are backed by a
+Caffeine cache (`CacheConfig`) so lookups don't hit the DB on every request;
+role/permission changes evict the affected cache entries.
 
 ### Audit logs — `/api/admin/audit-logs`
+All endpoints below require the `ADMIN` role.
+
 | Method | Path                              | Description |
 |--------|------------------------------------|-------------|
 | GET    | `/api/admin/audit-logs`            | List audit events (paginated) |
 | GET    | `/api/admin/audit-logs/user/{userId}` | List audit events for a specific user (paginated) |
+
+Audit events cover signup, login success/failure, account lockouts, logout,
+token revocation, password reset, the full MFA lifecycle, email verification,
+and account unlock.
 
 ### Public — `/api/public`
 | Method | Path               | Description |
 |--------|--------------------|-------------|
 | GET    | `/api/public/ping` | Unauthenticated health check |
 
-Requests are also subject to `RateLimitingFilter`, and access/refresh tokens can
-be revoked via `TokenBlacklistService` (backed by `RevokedToken`).
+Requests are also subject to `RateLimitingFilter` (Bucket4j, per-IP) on
+brute-forceable endpoints (`login`, `signup`, `forgot-password`, all
+`/api/auth/mfa/*`), and access/refresh tokens can be revoked via
+`TokenBlacklistService` (backed by `RevokedToken`).
 
 ### Todo API (`todoapi`, port 8082)
 | Method | Path                   | Description |
@@ -206,20 +256,32 @@ AuthHub/
 ├── security-api/          # Auth service (port 8080)
 │   └── src/main/java/com/henheang/securityapi/
 │       ├── config/         # WebSecurityConfig, CorsConfig, JwtConfig, OpenApiConfig,
-│       │                   #   DataInitializer, ScheduledTasks
-│       ├── controller/     # AuthController, UserController, AuditController,
-│       │                   #   MfaController, PublicController, SwaggerController
-│       ├── domain/         # User, Role, RefreshToken, RevokedToken, PasswordResetToken,
-│       │                   #   AuditEvent, AuditEventType, AuthProvider
+│       │                   #   DataInitializer, ScheduledTasks, CacheConfig (permission
+│       │                   #   cache), MfaEncryptionConfig (AES key for TOTP secrets)
+│       ├── controller/     # AuthController, UserController, AuditController, MfaController,
+│       │                   #   PermissionController, RoleController, UserRoleController,
+│       │                   #   PublicController, SwaggerController
+│       ├── domain/         # User, Role, Permission, UserRole, RefreshToken, RevokedToken,
+│       │                   #   PasswordResetToken, EmailVerificationToken, AccountUnlockToken,
+│       │                   #   MfaRecoveryCode, Device, LoginHistory, AuditLog,
+│       │                   #   AuditEventType, AuthProvider, DeviceType,
+│       │                   #   BaseEntity / SoftDeletableEntity / AuditBaseEntity (base classes)
 │       ├── repository/     # Spring Data JPA repositories
 │       ├── security/       # JWT filter/provider, RateLimitingFilter, UserPrincipal,
+│       │                   #   CustomPermissionEvaluator, SecureTokenGenerator,
+│       │                   #   crypto/MfaSecretConverter+Encryptor (TOTP secret encryption),
 │       │                   #   oauth/GoogleTokenVerifier (ID-token verification)
-│       ├── service/ (+impl)# AuthService, UserService, MfaService, AuditLogService,
-│       │                   #   TokenBlacklistService, RefreshTokenService, EmailService, ...
-│       ├── payload/        # Request/response DTOs (+ MFA request/response types)
+│       ├── service/ (+impl)# AuthService, UserService, MfaService, MfaBackupCodeService,
+│       │                   #   RoleService, PermissionService, UserRoleService, AuditLogService,
+│       │                   #   TokenBlacklistService, RefreshTokenService, EmailService,
+│       │                   #   EmailVerificationService, AccountUnlockService, LoginHistoryService
+│       ├── payload/        # Request/response DTOs (+ mfa/ request/response types)
 │       ├── exception/      # GlobalExceptionHandler + custom exceptions
-│       ├── validation/     # @ValidIdentifier custom constraint
+│       ├── validation/     # @ValidIdentifier, @StrongPassword custom constraints
 │       └── utils/          # JwtSecretGenerator, PhoneNumberUtil
+│   └── src/main/resources/
+│       └── db/migration/   # Flyway: V1__baseline, V2__account_security_tokens,
+│                           #   V3__mfa_recovery_codes
 │
 ├── todoapi/               # Sample business API (port 8082)
 │   └── src/main/java/com/test/todoapi/
@@ -265,12 +327,21 @@ shape across modules):
 |-----|--------|-------|
 | `server.port` | `${SERVER_PORT}` | Defaults: 8081 (`common-api`, not run directly), 8080 (`security-api`), 8082 (`todoapi`) |
 | `spring.datasource.url` | `${DB_URL}` | Defaults to `jdbc:postgresql://localhost:5432/jwt_auth` (`jwt_auth_test` under the `test` profile) |
-| `spring.jpa.hibernate.ddl-auto` | per profile | `update` (local/dev), `create-drop` (test), `validate` (prod — no auto schema changes) |
+| `spring.flyway.enabled` | `true` | Flyway is the sole schema authority — see `db/migration/` |
+| `spring.jpa.hibernate.ddl-auto` | `validate` (all profiles) | Hibernate only verifies the schema at startup; it never creates/alters it |
 | `jwt.secret` | `${JWT_SECRET}` | No fallback default outside `local`/`test`. **Required env var in `dev`/`prod`.** |
 | `jwt.expiration` | `PT24H` | Access-token lifetime (ISO-8601 duration) |
 | `jwt.refresh-token.expiration` | `P7D` | Refresh-token lifetime |
-| `app.frontend-url` | `${FRONTEND_URL}` | Used for CORS / reset links |
-| `spring.mail.*` | `${MAIL_USERNAME}` / `${MAIL_PASSWORD}` | Gmail SMTP |
+| `mfa.encryption-key` | `${MFA_ENCRYPTION_KEY}` | Base64 AES-256 key encrypting TOTP secrets at rest (`MfaEncryptionConfig`/`MfaSecretConverter`). No fallback outside `local`/`test`. |
+| `google.client-ids` | `${GOOGLE_CLIENT_IDS:}` | Comma-separated allowed OAuth client IDs; empty disables Google sign-in |
+| `app.frontend-url` | `${FRONTEND_URL}` | Used for CORS / reset, verification, and unlock links |
+| `app.account-lock.max-failed-attempts` | `5` | Failed logins before an account is locked |
+| `app.account-lock.lock-duration-minutes` | `15` | How long a lockout lasts before it auto-clears |
+| `app.account-lock.unlock-token-expiration-minutes` | `60` | TTL of the emailed self-service unlock link |
+| `app.email-verification.token-expiration-minutes` | `1440` | TTL of the emailed verification link |
+| `app.password-policy.*` | min length 12, upper/lower/digit/special required | Enforced by `@StrongPassword` |
+| `cache.permission.ttl-minutes` / `max-size` | `${PERMISSION_CACHE_TTL_MINUTES:5}` / `${PERMISSION_CACHE_MAX_SIZE:10000}` | Caffeine cache bounding staleness of `hasPermission(...)` checks (`CacheConfig`) |
+| `spring.mail.*` | `${MAIL_USERNAME}` / `${MAIL_PASSWORD}` | Gmail SMTP — used for password reset, email verification, and account-unlock emails |
 
 Google login is verified via ID token (`security/oauth/GoogleTokenVerifier`) —
 there is no cookie-based OAuth2 redirect flow, and the old custom OTP feature has
