@@ -30,6 +30,12 @@ jwt:
   refresh-token:
     expiration: P7D
 
+# Needed only because User.mfaSecret is @Convert-encrypted at the JPA level
+# (see TodoappApplication) - todoapi never reads/writes this field itself.
+# Must match security-api's MFA_ENCRYPTION_KEY (same encrypted column).
+mfa:
+  encryption-key: ${MFA_ENCRYPTION_KEY}
+
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   reset-password:

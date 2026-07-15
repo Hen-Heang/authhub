@@ -17,6 +17,11 @@ spring:
 jwt:
   secret: ${JWT_SECRET:6KReGxxaodLtxSNprFo4WeStpovMt6VOqiFOA1FtY67PfSkPckod2OzDIKpnLgsYAjEjQGZThOknDp+CD2+gcA==}
 
+# Needed only because User.mfaSecret is @Convert-encrypted at the JPA level
+# (see TodoappApplication) - todoapi never reads/writes this field itself.
+mfa:
+  encryption-key: ${MFA_ENCRYPTION_KEY:A5WWtiNdlns02Wd/qEkyzrioceZqK2kZ4/CwJCsAC00=}
+
 logging:
   level:
     com.test: WARN
