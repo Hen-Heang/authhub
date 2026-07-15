@@ -1,5 +1,5 @@
 rootProject.name = 'AuthHub'
 include 'security-api'
-include 'todoapi'
+include 'open-api'
 include 'common-api'
 

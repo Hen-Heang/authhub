@@ -1,4 +1,4 @@
-// Runnable auth service, also consumed as a library by todoapi (needs `jar` on too).
+// Runnable auth service, also consumed as a library by open-api (needs `jar` on too).
 bootJar {
     enabled = true
 }

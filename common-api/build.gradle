@@ -1,4 +1,4 @@
-// Library module: consumed by security-api/todoapi, never run standalone.
+// Library module: consumed by security-api/open-api, never run standalone.
 bootJar {
     enabled = false
 }
