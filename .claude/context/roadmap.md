@@ -15,9 +15,6 @@ Full list: `ROADMAP.md` (informal, living, not a commitment/timeline).
 
 ## Deliberately deferred (don't "fix" opportunistically)
 
-- `todoapi`'s `com.test.todoapi` base package vs. `com.henheang.*`
-  elsewhere — left alone because renaming touches every file in the module;
-  should be its own dedicated, easy-to-review change.
 - Checkstyle/PMD tightening (`ignoreFailures = true` currently) — deferred
   until reports are clean or the ruleset is trimmed.
 - JaCoCo coverage gate — reports generated, no minimum enforced yet.
@@ -28,7 +25,7 @@ Full list: `ROADMAP.md` (informal, living, not a commitment/timeline).
 
 ## Explicitly out of scope right now
 
-- Feature work in `security-api`/`todoapi` beyond finishing the OTP/OAuth2
+- Feature work in `security-api`/`open-api` beyond finishing the OTP/OAuth2
   removal and MFA/audit/rate-limiting work already in progress on `main`
   (`docs/security-api-state.md`). Do not resurrect removed OTP/OAuth2
   classes even if a roadmap item seems to imply reviving them.

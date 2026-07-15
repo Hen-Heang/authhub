@@ -39,16 +39,13 @@ security/(+crypto/, +oauth/) service/(+impl/) utils/ validation/`.
   (`src/main/resources/db/migration/`) — see `.claude/context/database.md`.
 - Depends on `common-api` only.
 
-## `todoapi` — `com.test.todoapi` (port 8082)
+## `open-api` — `com.henheang.openapi` (port 8082)
 
 Packages: `config/ controller/ domain/ enums/ payload/ repository/ service/
 util/`.
 
 - Sample business API (to-do lists/items) secured by JWTs issued by
   `security-api`. Depends on both `common-api` and `security-api`.
-- Base package (`com.test.todoapi`) intentionally doesn't match the
-  `com.henheang.*` convention yet — see `.claude/context/project.md`'s
-  "known rough edges".
 
 ## `legacy/spring-jwt-auth/`
 

@@ -44,7 +44,7 @@ is exactly the kind of file that goes stale silently.
   (`CacheConfig`/`PermissionQueryService`).
 - `commons-lang3` `3.12.0`, `commons-beanutils` `1.9.4`.
 
-## `todoapi`-specific dependencies
+## `open-api`-specific dependencies
 
 - Spring Security + jjwt (validates tokens issued by `security-api`, doesn't
   issue its own).

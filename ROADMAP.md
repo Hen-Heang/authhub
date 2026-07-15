@@ -6,7 +6,7 @@ current state of each module before assuming anything below is already done.
 ## Done (foundation)
 
 - [x] Multi-module Gradle build with a clean one-way dependency direction
-      (`common-api` → `security-api` → `todoapi`), deduplicated per-module
+      (`common-api` → `security-api` → `open-api`), deduplicated per-module
       `build.gradle` files.
 - [x] `local` / `dev` / `test` / `prod` Spring profiles per runnable module.
 - [x] Secrets externalized to environment variables; no committed real
@@ -19,10 +19,6 @@ current state of each module before assuming anything below is already done.
 
 ## Known follow-ups (not yet done, deliberately deferred)
 
-- **`todoapi` base package inconsistency** — `todoapi` uses `com.test.todoapi`
-  while `common-api`/`security-api` use `com.henheang.*`. Left alone during
-  the foundation pass because renaming it touches every file in the module;
-  worth doing as its own dedicated, easy-to-review change.
 - **Tighten Checkstyle/PMD** — currently advisory (`ignoreFailures = true`)
   so the existing codebase doesn't fail `./gradlew build`. Once the reports
   are clean (or the ruleset is trimmed to what the team actually wants
@@ -43,4 +39,4 @@ reviewed — see `CLAUDE.md`)
 - OTP/OAuth2 removal and MFA/audit/rate-limiting completion — in progress on
   `main` per `docs/security-api-state.md`. Do not resurrect removed OTP/OAuth2
   classes.
-- Everything else in `security-api`'s and `todoapi`'s feature backlog.
+- Everything else in `security-api`'s and `open-api`'s feature backlog.

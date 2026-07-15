@@ -2,7 +2,7 @@
 
 AuthHub is a multi-module Spring Boot monorepo providing a reusable
 authentication service (`security-api`) plus a sample business API
-(`todoapi`) that demonstrates consuming it. `common-api` is the shared base
+(`open-api`) that demonstrates consuming it. `common-api` is the shared base
 library both depend on.
 
 Core capabilities in `security-api`: JWT auth (issue/refresh/revocation),
@@ -27,10 +27,6 @@ RBAC (roles/permissions), audit logging, rate limiting, Swagger UI.
 
 ## Known, deliberate rough edges (don't "fix" without asking)
 
-- `todoapi` uses base package `com.test.todoapi` instead of `com.henheang.*`
-  — inconsistent with `common-api`/`security-api` on purpose for now; a
-  rename touches every file in the module and is deferred as its own
-  change.
 - Checkstyle/PMD are advisory only (`ignoreFailures = true`) so the existing
   codebase doesn't fail `./gradlew build`.
 - No JaCoCo coverage gate yet — reports are generated, not enforced.

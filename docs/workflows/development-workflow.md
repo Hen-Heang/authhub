@@ -11,11 +11,11 @@
 
 ```bash
 ./gradlew :security-api:bootRun    # port 8080
-./gradlew :todoapi:bootRun         # port 8082, needs security-api's JWT
+./gradlew :open-api:bootRun         # port 8082, needs security-api's JWT
 ```
 
 - Keep the module dependency direction intact: `common-api` → `security-api`
-  → `todoapi` (never introduce a cycle — see `docs/architecture.md`).
+  → `open-api` (never introduce a cycle — see `docs/architecture.md`).
 - Put new code in the matching package (`config/ controller/ domain/
   repository/ security/ service/(+impl/) payload/ exception/`) rather than
   inventing new top-level packages (`docs/coding-standards.md`).

@@ -3,11 +3,11 @@
 Full detail: `docs/architecture.md`.
 
 - Dependency direction is one-way and must never cycle:
-  `common-api` → `security-api` → `todoapi`.
+  `common-api` → `security-api` → `open-api`.
 - `common-api` has no bootJar and isn't runnable — it's the shared library
   (`ApiResponse`/`ApiStatus`/`StatusCode`, pagination, enum converters,
   interceptors). Everything else depends on it, never the reverse.
-- `security-api` (port 8080) is the auth service. `todoapi` (port 8082) is a
+- `security-api` (port 8080) is the auth service. `open-api` (port 8082) is a
   sample business API secured by `security-api`'s JWT — it may depend on
   `security-api`, not vice versa.
 - `legacy/spring-jwt-auth/` is archived, not in `settings.gradle`, not part

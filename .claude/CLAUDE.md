@@ -21,8 +21,9 @@ contributor/agent).
   - `new-feature.md`, `bug-fix.md`, `refactor.md` — the three general
     change shapes.
   - `api.md` — adding/changing a REST endpoint specifically.
-  - `migration.md` — JPA entity/schema changes (no migration tool yet, see
-    `docs/database.md` — ddl-auto=update).
+  - `migration.md` — JPA entity/schema changes via a new Flyway migration
+    file (see `docs/database.md` — ddl-auto=validate, Flyway is the schema
+    authority).
   - `review.md` — requesting a review against the same checklist as
     `.claude/rules/review.md`.
   - `documentation.md` — which `docs/*` files to check when code changes.

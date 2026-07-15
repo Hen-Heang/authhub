@@ -29,14 +29,14 @@ common-api   (base library — shared utilities, no app of its own)
 security-api (authentication service — JWT, Google login, MFA, audit)  ── runnable
     ▲
     │
-todoapi      (sample business API protected by security-api)           ── runnable
+open-api     (sample business API protected by security-api)           ── runnable
 ```
 
 | Module         | Port  | bootJar | Purpose |
 |----------------|-------|---------|---------|
 | `common-api`   | —     | ❌ off  | Shared library: API response envelopes (`ApiResponse`, `ApiStatus`, `StatusCode`), pagination, enum converters, interceptors. Built as a plain `jar` and consumed by the other modules — not run directly. |
 | `security-api` | 8080  | ✅ on   | Core authentication service: signup/login, JWT issue/refresh/revocation, Google ID-token login, MFA (TOTP + backup codes), email verification, password reset, account lockout/unlock, RBAC (roles/permissions), user management, audit logging, rate limiting, Swagger UI. |
-| `todoapi`      | 8082  | ✅ on   | Example business API (to-do lists/items) that depends on `security-api` for authentication. |
+| `open-api`      | 8082  | ✅ on   | Example business API (to-do lists/items) that depends on `security-api` for authentication. |
 
 Dependency wiring lives in the **root `build.gradle`** (`subprojects { ... }`
 plus per-project blocks), so most dependencies are declared once at the top.
@@ -64,7 +64,7 @@ createdb -U postgres jwt_auth
 
 ### Configuration profiles
 
-Each runnable module (`common-api`'s context, `security-api`, `todoapi`) loads
+Each runnable module (`common-api`'s context, `security-api`, `open-api`) loads
 `application.yml` plus a profile file selected by `SPRING_PROFILES_ACTIVE`
 (Spring's standard `application-{profile}.yml` convention):
 
@@ -107,7 +107,7 @@ From the `AuthHub/` directory:
 
 # Build a single module
 ./gradlew :security-api:build
-./gradlew :todoapi:build
+./gradlew :open-api:build
 
 # Skip tests
 ./gradlew build -x test
@@ -135,7 +135,7 @@ Each runnable module is started with the Spring Boot plugin:
 ./gradlew :security-api:bootRun
 
 # Start the todo API (port 8082) — needs security-api's JWT to authenticate
-./gradlew :todoapi:bootRun
+./gradlew :open-api:bootRun
 ```
 
 `common-api` is a library (`bootJar` disabled) and is **not** run directly — it
@@ -230,7 +230,7 @@ brute-forceable endpoints (`login`, `signup`, `forgot-password`, all
 `/api/auth/mfa/*`), and access/refresh tokens can be revoked via
 `TokenBlacklistService` (backed by `RevokedToken`).
 
-### Todo API (`todoapi`, port 8082)
+### Todo API (`open-api`, port 8082)
 | Method | Path                   | Description |
 |--------|------------------------|-------------|
 | POST   | `/api/todo/v1/create`  | Create a todo list for the authenticated user |
@@ -283,8 +283,8 @@ AuthHub/
 │       └── db/migration/   # Flyway: V1__baseline, V2__account_security_tokens,
 │                           #   V3__mfa_recovery_codes
 │
-├── todoapi/               # Sample business API (port 8082)
-│   └── src/main/java/com/test/todoapi/
+├── open-api/               # Sample business API (port 8082)
+│   └── src/main/java/com/test/open-api/
 │       ├── controller/  service/  repository/
 │       ├── domain/       # TodoList, TodoItem, Tag, ListShare, TodoComment, ...
 │       ├── payload/  enums/  util/
@@ -298,12 +298,12 @@ AuthHub/
 
 1. **Start dependencies** — make sure PostgreSQL is running and `jwt_auth` exists.
 2. **Make changes** — shared code goes in `common-api`; auth logic in `security-api`;
-   business features in `todoapi`. Keep the dependency direction
-   (`todoapi → security-api → common-api`) intact to avoid build cycles.
+   business features in `open-api`. Keep the dependency direction
+   (`open-api → security-api → common-api`) intact to avoid build cycles.
 3. **Run tests** — `./gradlew test` (or per module, e.g. `./gradlew :security-api:test`).
    Tests use JUnit 5 (`useJUnitPlatform()`).
 4. **Run locally** — `./gradlew :security-api:bootRun`, then exercise endpoints via
-   Swagger UI or an HTTP client. Start `todoapi` too if you need the business API.
+   Swagger UI or an HTTP client. Start `open-api` too if you need the business API.
 5. **Verify the build** — `./gradlew build` before committing.
 
 ### Conventions
@@ -325,7 +325,7 @@ shape across modules):
 
 | Key | Source | Notes |
 |-----|--------|-------|
-| `server.port` | `${SERVER_PORT}` | Defaults: 8081 (`common-api`, not run directly), 8080 (`security-api`), 8082 (`todoapi`) |
+| `server.port` | `${SERVER_PORT}` | Defaults: 8081 (`common-api`, not run directly), 8080 (`security-api`), 8082 (`open-api`) |
 | `spring.datasource.url` | `${DB_URL}` | Defaults to `jdbc:postgresql://localhost:5432/jwt_auth` (`jwt_auth_test` under the `test` profile) |
 | `spring.flyway.enabled` | `true` | Flyway is the sole schema authority — see `db/migration/` |
 | `spring.jpa.hibernate.ddl-auto` | `validate` (all profiles) | Hibernate only verifies the schema at startup; it never creates/alters it |

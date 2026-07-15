@@ -30,7 +30,7 @@ Considerations:
   Call that out explicitly if the change is risky for an existing local/prod
   database.
 - Confirm no other repository/service assumes the old shape (grep the field
-  name across security-api, and todoapi if it's exposed further).
+  name across security-api, and open-api if it's exposed further).
 
 Deliverables:
 - The new migration file, applied and verified locally

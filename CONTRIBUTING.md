@@ -10,7 +10,7 @@ running anything.
 ## Workflow
 
 1. Keep the module dependency direction intact: `common-api` ← `security-api`
-   ← `todoapi`. Never introduce a cycle (see `docs/architecture.md`).
+   ← `open-api`. Never introduce a cycle (see `docs/architecture.md`).
 2. Follow `docs/coding-standards.md` — Lombok for boilerplate, MapStruct for
    DTO↔entity mapping, `ApiResponse`/`ApiStatus`/`StatusCode` envelopes for all
    API responses, exceptions thrown as domain exceptions (not caught/formatted
