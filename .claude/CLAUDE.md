@@ -15,7 +15,7 @@ contributor/agent).
   - `testing.md` — JUnit 5, `./gradlew build` vs. `test`, CI parity.
   - `git.md` — commit rules, mid-refactor `main` caution, destructive ops.
   - `review.md` — pre-review checklist, `/code-review` skill usage.
-- `prompts/` — reusable prompt templates for recurring task types, each with
+- `commands/` — reusable project commands for recurring task types, each with
   a fill-in-the-blank body that bakes in the relevant `.claude/rules/*`
   constraints:
   - `new-feature.md`, `bug-fix.md`, `refactor.md` — the three general
@@ -43,5 +43,5 @@ contributor/agent).
     vs. out of scope.
   - `tech-stack.md` — dependency versions pulled from the root
     `build.gradle` — re-verify before relying on a version number from here.
-- `settings.local.json` — local, untracked-in-spirit Claude Code settings
-  (permissions, hooks) for this machine/user.
+- `settings.json` — shared, conservative permissions for builds and read-only Git inspection, plus denials for secrets and destructive Git operations.
+- `settings.local.json` — ignored machine-local overrides. Keep credentials and one-off command approvals out of this repository.
